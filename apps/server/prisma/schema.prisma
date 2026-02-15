@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  SERVER
+}
+
+enum TableShape {
+  ROUND
+  SQUARE
+  RECTANGLE
+  BOOTH
+  BAR_STOOL
+}
+
+enum TableStatus {
+  AVAILABLE
+  RESERVED
+  SEATED
+  ORDERING
+  SERVED
+  CHECK_REQUESTED
+  CLEANING
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  CLAIMED
+  ACTIVE
+  COMPLETED
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  SEATED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  password         String
+  name             String
+  role             UserRole          @default(SERVER)
+  avatar           String?
+  active           Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  restaurants      Restaurant[]
+  layouts          Layout[]          @relation("CreatedLayouts")
+  shifts           Shift[]           @relation("CreatedShifts")
+  shiftAssignments ShiftAssignment[]
+  activityLogs     ActivityLog[]
+}
+
+model Restaurant {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  timezone  String   @default("America/New_York")
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  floors    Floor[]
+  createdAt DateTime @default(now())
+}
+
+model Floor {
+  id           String    @id @default(uuid())
+  name         String
+  level        Int       @default(1)
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  layouts      Layout[]
+  sections     Section[]
+  shifts       Shift[]
+}
+
+model Layout {
+  id        String        @id @default(uuid())
+  name      String
+  floorId   String
+  floor     Floor         @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  elements  Json          @default("[]")
+  gridSize  Int           @default(20)
+  width     Int           @default(1200)
+  height    Int           @default(800)
+  isActive  Boolean       @default(false)
+  version   Int           @default(1)
+  createdBy String
+  creator   User          @relation("CreatedLayouts", fields: [createdBy], references: [id])
+  tables    TableConfig[]
+  sections  Section[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model TableConfig {
+  id          String         @id @default(uuid())
+  layoutId    String
+  layout      Layout         @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  tableNumber Int
+  elementId   String
+  seats       Int            @default(4)
+  shape       TableShape     @default(ROUND)
+  x           Float
+  y           Float
+  width       Float
+  height      Float
+  rotation    Float          @default(0)
+  sections    SectionTable[]
+  statuses    TableStatusEntry[]
+  reservations Reservation[]
+
+  @@unique([layoutId, tableNumber])
+}
+
+model Section {
+  id               String            @id @default(uuid())
+  name             String
+  color            String
+  layoutId         String
+  layout           Layout            @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  floorId          String
+  floor            Floor             @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  tables           SectionTable[]
+  shiftAssignments ShiftAssignment[]
+}
+
+model SectionTable {
+  sectionId String
+  section   Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  tableId   String
+  table     TableConfig @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@id([sectionId, tableId])
+}
+
+model Shift {
+  id          String            @id @default(uuid())
+  name        String
+  startTime   DateTime
+  endTime     DateTime
+  date        DateTime          @db.Date
+  floorId     String
+  floor       Floor             @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  createdBy   String
+  creator     User              @relation("CreatedShifts", fields: [createdBy], references: [id])
+  assignments ShiftAssignment[]
+  tableStatuses TableStatusEntry[]
+  createdAt   DateTime          @default(now())
+}
+
+model ShiftAssignment {
+  id        String           @id @default(uuid())
+  shiftId   String
+  shift     Shift            @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  sectionId String
+  section   Section          @relation(fields: [sectionId], references: [id])
+  claimedAt DateTime?
+  status    AssignmentStatus @default(ASSIGNED)
+
+  @@unique([shiftId, userId])
+}
+
+model TableStatusEntry {
+  id         String      @id @default(uuid())
+  tableId    String
+  table      TableConfig @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  shiftId    String?
+  shift      Shift?      @relation(fields: [shiftId], references: [id])
+  status     TableStatus @default(AVAILABLE)
+  guestCount Int         @default(0)
+  notes      String?
+  serverName String?
+  seatedAt   DateTime?
+  updatedAt  DateTime    @default(now()) @updatedAt
+}
+
+model Reservation {
+  id         String            @id @default(uuid())
+  tableId    String
+  table      TableConfig       @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  guestName  String
+  partySize  Int
+  dateTime   DateTime
+  duration   Int               @default(90)
+  notes      String?
+  status     ReservationStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  details    Json?
+  createdAt  DateTime @default(now())
+}
