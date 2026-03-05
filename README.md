@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Socket.io-Real--Time-010101?style=for-the-badge&logo=socket.io&logoColor=white" />
 </p>
 
-# FloorView — Restaurant Floor Plan Manager
+# FloorView - Restaurant Floor Plan Manager
 
 An interactive, real-time restaurant floor plan manager that helps staff manage table sections and assignments during service. Designed to solve real operational problems where servers need a clearer way to visualize table sections and claim their areas during a shift.
 
@@ -139,7 +139,7 @@ An interactive, real-time restaurant floor plan manager that helps staff manage 
 ## Features
 
 ### Canvas Floor Plan Editor
-- **5 table shapes**: Round, Square, Rectangle, Booth, Bar Stool — each with chair indicators and capacity display
+- **5 table shapes**: Round, Square, Rectangle, Booth, Bar Stool - each with chair indicators and capacity display
 - **Decorations**: Bar counter, kitchen zone, entrance, restrooms, plants, pillars
 - **Walls & Labels**: Draw walls, place text labels anywhere on the floor plan
 - **Full interactions**: Drag, resize, rotate, multi-select, copy/paste, undo/redo (50 levels)
@@ -338,7 +338,7 @@ npx prisma studio
 ### Running the Application
 
 ```bash
-# From the root directory — starts both server and client
+# From the root directory - starts both server and client
 npm run dev
 ```
 
